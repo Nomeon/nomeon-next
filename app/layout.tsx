@@ -3,7 +3,6 @@ import { Header } from "@/components/custom/header";
 import { Background } from "@/components/custom/background";
 import { Frame } from "@/components/custom/frame";
 import { ThemeProvider } from "@/components/custom/theme-provider"
-import { MobileMenu } from "@/components/custom/mobile-menu";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,8 +27,7 @@ export default function RootLayout({
           <Header />
           <Background />
           <Frame />
-          {/* <MobileMenu /> */}
-          <main className="fixed z-30 h-[calc(100dvh-6.75rem)] w-[calc(100dvw-2.5rem)] left-5 top-20 md:h-[calc(100dvh-5rem)] md:w-[calc(100dvw-5rem)] md:left-10 md:top-10 overflow-y-scroll no-scrollbar">
+          <main className="fixed z-30 container-frame overflow-y-scroll no-scrollbar">
             {children}
           </main>
         </ThemeProvider>

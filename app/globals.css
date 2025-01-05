@@ -102,4 +102,8 @@
   .turn-to-black {
     filter: invert(1);
   }
+
+  .container-frame {
+    @apply h-[calc(100dvh-6.75rem)] w-[calc(100dvw-2.5rem)] left-5 top-20 md:h-[calc(100dvh-5rem)] md:w-[calc(100dvw-5rem)] md:left-10 md:top-10
+  }
 }

@@ -171,7 +171,6 @@ const Background = () => {
             const angle = angleObj.value
             const x = radius * Math.cos(angle)
             const z = radius * Math.sin(angle)
-            console.log(camera.position)
             
             camera.position.set(x, standardHeight, z)
             camera.lookAt(0, 100, 0)
@@ -180,7 +179,7 @@ const Background = () => {
       }, [pathname])
 
     return (
-        <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2, delay: 1 }} ref={containerRef} className="fixed z-10 h-[calc(100dvh-6.75rem)] w-[calc(100dvw-2.5rem)] left-5 top-20 md:h-[calc(100dvh-5rem)] md:w-[calc(100dvw-5rem)] md:left-10 md:top-10" />
+        <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2, delay: 1 }} ref={containerRef} className="fixed z-10 container-frame" />
     )
 }
 

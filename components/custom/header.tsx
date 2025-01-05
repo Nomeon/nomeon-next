@@ -18,22 +18,24 @@ const Header = () => {
                     />
                 </motion.svg>
                 <div className="z-50 fixed right-2 md:top-6 top-16 dark:bg-black bg-white text-left dark:text-white text-black rounded-xl md:flex items-center gap-4 md:pr-5">
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1, delay: 1 }}  className="flex flex-row font-barlow items-center justify-center px-2">
-                        <Link href="/">
-                            <p className="text-2xl">HOME</p>
-                        </Link>
-                        <div className="h-6 w-[1px] dark:bg-white bg-black mx-2" />
-                        <Link href="/about">
-                            <p className="text-2xl">ABOUT</p>
-                        </Link>
-                        <div className="h-6 w-[1px] dark:bg-white bg-black mx-2" />
-                        <Link href="/projects">
-                            <p className="text-2xl">PROJECTS</p>
-                        </Link>
-                        <div className="h-6 w-[1px] dark:bg-white bg-black mx-2" />
-                        <Link href="/contact">
-                            <p className="text-2xl">CONTACT</p>
-                        </Link>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1, delay: 1 }}  >
+                        <nav className="flex flex-row font-barlow items-center justify-center px-2">
+                            <Link href="/">
+                                <p className="text-xl">HOME</p>
+                            </Link>
+                            <div className="h-4 w-[1px] dark:bg-white bg-black mx-2" />
+                            <Link href="/about">
+                                <p className="text-xl">ABOUT</p>
+                            </Link>
+                            <div className="h-4 w-[1px] dark:bg-white bg-black mx-2" />
+                            <Link href="/projects">
+                                <p className="text-xl">PROJECTS</p>
+                            </Link>
+                            <div className="h-4 w-[1px] dark:bg-white bg-black mx-2" />
+                            <Link href="/contact">
+                                <p className="text-xl">CONTACT</p>
+                            </Link>
+                        </nav>
                     </motion.div>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1, delay: 1 }}>
                         <ModeToggle />
