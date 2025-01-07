@@ -3,6 +3,9 @@
 import { useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
 import * as THREE from "three"
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer"
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass"
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass"
 import * as motion from 'motion/react-client'
 import { usePathname } from "next/navigation"
 import { gsap } from "gsap"
@@ -14,10 +17,11 @@ function rn(min: number, max: number) {
 
 function angleForRoute(pathname: string): number {
     switch (pathname) {
-      case "/about":    return Math.PI / 2
-      case "/projects": return Math.PI
-      case "/contact":  return 3 * Math.PI / 2
-      default:          return 0  // for "/"
+        // Turn all 45 degrees with a 45 degree offset
+        case "/about":    return Math.PI / 2 + Math.PI / 4
+        case "/projects": return Math.PI + Math.PI / 4
+        case "/contact":  return 3 * Math.PI / 2 + Math.PI / 4
+        default:          return Math.PI / 4
     }
 }
 
@@ -33,10 +37,12 @@ const Background = () => {
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
+    const composerRef = useRef<EffectComposer | null>(null);
+    const starmaterialRef = useRef<THREE.PointsMaterial | null>(null);
     const pathname = usePathname();
-    const standardHeight = 100
+    const standardHeight = 75
     const range = 30
-    const space = 10
+    const space = 20
     gsap.registerPlugin(CustomEase)
 
     useEffect(() => {
@@ -49,7 +55,7 @@ const Background = () => {
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
         
         const renderer = new THREE.WebGLRenderer({ antialias: true })
-        renderer.setSize(width, height)
+        renderer.setSize(width, height)        
         container.append(renderer.domElement)
 
         sceneRef.current = scene
@@ -59,11 +65,11 @@ const Background = () => {
         camera.position.set(500, standardHeight, 0)
         camera.lookAt(0,100,0)
 
-        // STARS IN SQUARE GRID 
+        // Starfield generation 
         const starPositions = []
 
-        for (let i = -range; i <= range; i++) { // Van boven naar beneden
-            for (let j = -range; j <= range; j++) { // Van rechts naar links
+        for (let i = -range; i <= range; i++) { // UP -> DOWN
+            for (let j = -range; j <= range; j++) { // RIGHT -> LEFT
                 // Each "point" is one star
                 const star = new THREE.Vector3();
                 star.x = i * space + space / 2;
@@ -73,33 +79,34 @@ const Background = () => {
             }
         }
 
-        // STARS IN RANDOM CIRCLE        
-        // const starPositions = []
-        // const starCount = 5000
-        // const radius = 300
-
-        // for (let i = 0; i < starCount; i++) {
-        //     const rand = Math.random();           // in [0, 1]
-        //     const r = radius * Math.sqrt(rand);   // ensures uniform distribution across the disk
-        //               const angle = 2 * Math.PI * Math.random();
-          
-        //     const x = r * Math.cos(angle);
-        //     const z = r * Math.sin(angle);
-        //     const y = rn(0, 5);
-          
-        //     starPositions.push(new THREE.Vector3(x, y, z));
-        // }
-
-
-        // Shared material for all stars
+        // Star material and geometry
         const starsGeometry = new THREE.BufferGeometry()
         starsGeometry.setFromPoints(starPositions);
         const starsMaterial = new THREE.PointsMaterial({
             color: 0x00ccff,
             size: 1,
         });
+        starmaterialRef.current = starsMaterial
         const starField = new THREE.Points(starsGeometry, starsMaterial);
         scene.add(starField);
+
+        // Post-processing for glow
+        const composer = new EffectComposer(renderer)
+        composerRef.current = composer
+
+        const renderPass = new RenderPass(scene, camera)
+        composer.addPass(renderPass)
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(width, height), 
+            1.5, 
+            0.4, 
+            0.85
+        )
+        bloomPass.threshold = 0.1
+        bloomPass.strength = 2 // 1.5
+        bloomPass.radius = 1
+        composer.addPass(bloomPass)
 
         function animateScene() {
             requestAnimationFrame(animateScene)
@@ -115,7 +122,7 @@ const Background = () => {
             }
 
             starsGeometry.attributes.position.needsUpdate = true;
-            renderer.render(scene, camera)
+            composer.render()
         }
         animateScene()
 
@@ -125,6 +132,7 @@ const Background = () => {
             camera.aspect = w / h;
             camera.updateProjectionMatrix();
             renderer.setSize(w, h);
+            composer.setSize(w, h);
         }
         window.addEventListener("resize", handleResize);
 
@@ -142,9 +150,13 @@ const Background = () => {
 
     useEffect(() => {
         const scene = sceneRef.current
-        if (scene) {
+        const material = starmaterialRef.current
+        if (scene && material) {
             const bg = theme === "dark" ? 0x000000 : 0xffffff
             scene.background = new THREE.Color(bg)
+            const color = theme === "dark" ? 0x00ccff : 0xff0000
+            material.color.setHex(color)
+            console.log(material.color)
         }
     }, [theme])
 
@@ -152,15 +164,12 @@ const Background = () => {
         if (!cameraRef.current) return
         const camera = cameraRef.current
       
-        // 1) figure out current angle & radius
         const startAngle = Math.atan2(camera.position.z, camera.position.x)
         const radius = Math.sqrt(camera.position.x**2 + camera.position.z**2)
         
-        // 2) decide targetAngle based on route
         const routeAngle = angleForRoute(pathname)
         const finalAngle = shortestAngle(startAngle, routeAngle)
       
-        // 3) tween from startAngle -> finalAngle
         let angleObj = { value: startAngle }
         gsap.to(angleObj, {
           value: finalAngle,
@@ -179,7 +188,7 @@ const Background = () => {
       }, [pathname])
 
     return (
-        <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2, delay: 1 }} ref={containerRef} className="fixed z-10 container-frame" />
+        <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 3, delay: 1, ease: "easeInOut" }} ref={containerRef} className="fixed z-10 container-frame" />
     )
 }
 
