@@ -8,6 +8,12 @@ import { usePathname } from "next/navigation"
 import { gsap } from "gsap"
 import { CustomEase } from "gsap/all"
 
+interface WaveOrigin {
+    startTime: number
+    centerX: number
+    centerZ: number
+}
+
 function angleForRoute(pathname: string): number {
     switch (pathname) {
         // Turn all 45 degrees with a 45 degree offset
@@ -99,6 +105,7 @@ const Background = () => {
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
         const raycaster = new THREE.Raycaster()
         const mouse = new THREE.Vector2()
+        const waveOrigins: WaveOrigin[] = []
         
         const renderer = new THREE.WebGLRenderer({ antialias: true })
         renderer.setSize(width, height)        
@@ -152,11 +159,19 @@ const Background = () => {
         const starField = new THREE.Points(starsGeometry, starShaderMaterial);
         scene.add(starField);
 
+        // Invisible plane for raycasting
+        const planeGeometry = new THREE.PlaneGeometry(1000, 1000)
+        planeGeometry.rotateX(-Math.PI / 2)
+        const planeMaterial = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, visible: false })
+        const invisiblePlane = new THREE.Mesh(planeGeometry, planeMaterial)
+        invisiblePlane.position.y = 0
+        scene.add(invisiblePlane)
+
         function animateScene() {
             requestAnimationFrame(animateScene)
 
             const timeSeconds = performance.now() * 0.001
-            const maxDistance = range * space + halfWidth * 4
+            const maxDistance = range * space * 2 + 200
 
             const positions = starsGeometry.attributes.position.array as Float32Array
             for (let idx = 0; idx < positions.length; idx += 3) {
@@ -167,14 +182,17 @@ const Background = () => {
                 const r = Math.sqrt(baseX*baseX + baseZ*baseZ)
                 let totalOffset = 0.0
 
-                for (let n = 0; n < 20; n++) {
-                    const ringStartTime = n * ringInterval
-                    if (timeSeconds < ringStartTime) break
+                // for (let n = 0; n < 20; n++) {
+                for (let origin of waveOrigins) {
+                    const ringAge = timeSeconds - origin.startTime
+                    if (ringAge < 0) continue
 
-                    const ringAge = timeSeconds - ringStartTime
                     const waveFront = waveSpeed * ringAge
-
                     if (waveFront - halfWidth > maxDistance) continue
+
+                    const dx = baseX - origin.centerX
+                    const dz = baseZ - origin.centerZ
+                    const r = Math.sqrt(dx*dx + dz*dz)
                     const distanceFromFront = r - waveFront
 
                     if (Math.abs(distanceFromFront) < halfWidth) {
@@ -203,21 +221,37 @@ const Background = () => {
         }
         window.addEventListener("resize", handleResize);
 
-        function onMouseDown(event: MouseEvent) {
+        function onPointerDown(event: MouseEvent) {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
 
-            const intersects = raycaster.intersectObjects([])
+            const intersects = raycaster.intersectObject(invisiblePlane, false)
+            if (intersects.length > 0) {
+                const point = intersects[0].point
+                spawnRippleAt(point.x, point.z)
+            }
+        }
+        window.addEventListener("pointerdown", onPointerDown)
+
+        function spawnRippleAt(x: number, z: number) {
+            console.log(x, z)
+            waveOrigins.push({
+                startTime: performance.now() * 0.001,
+                centerX: x,
+                centerZ: z
+            })
         }
 
         return () => {
             window.removeEventListener("resize", handleResize)
+            window.removeEventListener("pointerdown", onPointerDown)
             if (container.contains(renderer.domElement)) {
                 container.removeChild(renderer.domElement);
             }
             starsGeometry.dispose();
+            planeGeometry.dispose();
             renderer.dispose();
         }
     }, [])
@@ -250,7 +284,6 @@ const Background = () => {
           duration: 2,
           ease: CustomEase.create("custom", "M0,0 C0,0 0.300,0 0.5,0.5 0.700,1 1,1 1,1 "),
           onUpdate: () => {
-            // x = radius * cos(angle), z = radius * sin(angle)
             const angle = angleObj.value
             const x = radius * Math.cos(angle)
             const z = radius * Math.sin(angle)
