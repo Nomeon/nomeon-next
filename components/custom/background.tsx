@@ -3,17 +3,10 @@
 import { useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
 import * as THREE from "three"
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer"
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass"
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass"
 import * as motion from 'motion/react-client'
 import { usePathname } from "next/navigation"
 import { gsap } from "gsap"
 import { CustomEase } from "gsap/all"
-
-function rn(min: number, max: number) {
-    return Math.random() * (max - min) + min
-}
 
 function angleForRoute(pathname: string): number {
     switch (pathname) {
@@ -31,18 +24,69 @@ function shortestAngle(start: number, end: number) {
     return start + diff
 }
 
+const vertexShader = `
+    uniform float uSize;
+  
+    void main() {
+        // Standard position calculation
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+
+        // Set point size -- scales with distance
+        // Tweak 400.0 as needed for your FOV
+        gl_PointSize = uSize * (400.0 / -mvPosition.z);  
+
+        gl_Position = projectionMatrix * mvPosition;
+    }
+`;
+
+const fragmentShader = `
+    uniform vec3 uColor;
+    uniform float uAlpha;
+
+    void main() {
+        // Distance from this fragment to center of the point (0.5, 0.5)
+        float dist = distance(gl_PointCoord, vec2(0.5, 0.5));
+
+        // Use smoothstep for a nice fade at the edges
+        // The first two params define the start and end of the transition
+        float radius = 0.45; // how big the "glow" is
+        float edge = 0.6;   // how hard/soft the falloff is
+        float alpha = 1.0 - smoothstep(radius, edge, dist);
+
+        // Final output: color * alpha
+        // 'alpha * uAlpha' so we can control overall material transparency
+        gl_FragColor = vec4(uColor, alpha * uAlpha);
+    }
+`;
+
+
 const Background = () => {
     const { theme } = useTheme()
+    const pathname = usePathname();
+
     const containerRef = useRef<HTMLDivElement>(null)
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
-    const composerRef = useRef<EffectComposer | null>(null);
-    const starmaterialRef = useRef<THREE.PointsMaterial | null>(null);
-    const pathname = usePathname();
+    const starShaderMaterialRef = useRef<THREE.ShaderMaterial | null>(null);
+
+    // Field parameters:
     const standardHeight = 75
-    const range = 30
-    const space = 20
+    const range = 50
+    const space = 10
+
+    // Star parameters:
+    const darkColor = 0x00ccff
+    const lightColor = 0xff0000
+    const starSize = 2.0
+    const starAlpha = 1.0
+
+    // Wave animation parameters:
+    const waveSpeed = 175
+    const halfWidth = 50
+    const amplitude = 12
+    const ringInterval = 2.5
+
     gsap.registerPlugin(CustomEase)
 
     useEffect(() => {
@@ -53,6 +97,8 @@ const Background = () => {
         const width = container.clientWidth
         const height = container.clientHeight
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
+        const raycaster = new THREE.Raycaster()
+        const mouse = new THREE.Vector2()
         
         const renderer = new THREE.WebGLRenderer({ antialias: true })
         renderer.setSize(width, height)        
@@ -73,7 +119,7 @@ const Background = () => {
                 // Each "point" is one star
                 const star = new THREE.Vector3();
                 star.x = i * space + space / 2;
-                star.y = rn(0, 5);
+                star.y = 0;
                 star.z = j * space + space / 2;
                 starPositions.push(star);
             }
@@ -82,47 +128,69 @@ const Background = () => {
         // Star material and geometry
         const starsGeometry = new THREE.BufferGeometry()
         starsGeometry.setFromPoints(starPositions);
-        const starsMaterial = new THREE.PointsMaterial({
-            color: 0x00ccff,
-            size: 1,
-        });
-        starmaterialRef.current = starsMaterial
-        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        const basePositions = new Float32Array(starPositions.length * 3)
+        for (let i = 0; i < starPositions.length; i++) {
+            basePositions[3*i + 0] = starPositions[i].x;
+            basePositions[3*i + 1] = starPositions[i].y;
+            basePositions[3*i + 2] = starPositions[i].z;
+        }
+
+        const starShaderMaterial = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            transparent: true,
+            blending: THREE.NormalBlending,
+            uniforms: {
+                uSize: { value: starSize }, // Size of the stars
+                uColor: { value: new THREE.Color(darkColor) }, // Standard color
+                uAlpha: { value: starAlpha } // Standard alpha
+            }
+        })
+
+        starShaderMaterialRef.current = starShaderMaterial
+
+        const starField = new THREE.Points(starsGeometry, starShaderMaterial);
         scene.add(starField);
-
-        // Post-processing for glow
-        const composer = new EffectComposer(renderer)
-        composerRef.current = composer
-
-        const renderPass = new RenderPass(scene, camera)
-        composer.addPass(renderPass)
-
-        const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(width, height), 
-            1.5, 
-            0.4, 
-            0.85
-        )
-        bloomPass.threshold = 0.1
-        bloomPass.strength = 2 // 1.5
-        bloomPass.radius = 1
-        composer.addPass(bloomPass)
 
         function animateScene() {
             requestAnimationFrame(animateScene)
 
+            const timeSeconds = performance.now() * 0.001
+            const maxDistance = range * space + halfWidth * 4
+
             const positions = starsGeometry.attributes.position.array as Float32Array
             for (let idx = 0; idx < positions.length; idx += 3) {
-                const x = positions[idx];
-                const y = positions[idx + 1];
-                const z = positions[idx + 2];
+                const baseX = basePositions[idx + 0]
+                const baseY = basePositions[idx + 1]
+                const baseZ = basePositions[idx + 2]
 
-                const newY = y + 0.1 * Math.sin(z * 0.02 + x * 0.015 + Date.now() * 0.002);
-                positions[idx + 1] = newY;
+                const r = Math.sqrt(baseX*baseX + baseZ*baseZ)
+                let totalOffset = 0.0
+
+                for (let n = 0; n < 20; n++) {
+                    const ringStartTime = n * ringInterval
+                    if (timeSeconds < ringStartTime) break
+
+                    const ringAge = timeSeconds - ringStartTime
+                    const waveFront = waveSpeed * ringAge
+
+                    if (waveFront - halfWidth > maxDistance) continue
+                    const distanceFromFront = r - waveFront
+
+                    if (Math.abs(distanceFromFront) < halfWidth) {
+                        const normalized = distanceFromFront / halfWidth;
+                        const waveShape = (1 + Math.cos(Math.PI * normalized)) / 2;
+                        totalOffset += waveShape * amplitude;
+                    }
+                }
+
+                positions[idx + 0] = baseX
+                positions[idx + 1] = baseY + totalOffset
+                positions[idx + 2] = baseZ
             }
 
             starsGeometry.attributes.position.needsUpdate = true;
-            composer.render()
+            renderer.render(scene, camera);
         }
         animateScene()
 
@@ -132,17 +200,23 @@ const Background = () => {
             camera.aspect = w / h;
             camera.updateProjectionMatrix();
             renderer.setSize(w, h);
-            composer.setSize(w, h);
         }
         window.addEventListener("resize", handleResize);
+
+        function onMouseDown(event: MouseEvent) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects([])
+        }
 
         return () => {
             window.removeEventListener("resize", handleResize)
             if (container.contains(renderer.domElement)) {
                 container.removeChild(renderer.domElement);
             }
-        
-            starsMaterial.dispose();
             starsGeometry.dispose();
             renderer.dispose();
         }
@@ -150,13 +224,13 @@ const Background = () => {
 
     useEffect(() => {
         const scene = sceneRef.current
-        const material = starmaterialRef.current
-        if (scene && material) {
-            const bg = theme === "dark" ? 0x000000 : 0xffffff
+        const mat = starShaderMaterialRef.current
+        if (scene && mat) {
+            const bg = theme === "dark" ? 0x000000 : 0xffffff;
             scene.background = new THREE.Color(bg)
-            const color = theme === "dark" ? 0x00ccff : 0xff0000
-            material.color.setHex(color)
-            console.log(material.color)
+
+            const color = theme === "dark" ? darkColor : lightColor;
+            mat.uniforms.uColor.value.setHex(color);
         }
     }, [theme])
 
