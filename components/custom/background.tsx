@@ -74,6 +74,7 @@ const Background = () => {
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
+    const waveOriginsRef = useRef<WaveOrigin[]>([])
     const starShaderMaterialRef = useRef<THREE.ShaderMaterial | null>(null);
 
     // Field parameters:
@@ -91,7 +92,7 @@ const Background = () => {
     const waveSpeed = 175
     const halfWidth = 50
     const amplitude = 12
-    const ringInterval = 2.5
+    const ringInterval = 4
 
     gsap.registerPlugin(CustomEase)
 
@@ -105,7 +106,6 @@ const Background = () => {
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
         const raycaster = new THREE.Raycaster()
         const mouse = new THREE.Vector2()
-        const waveOrigins: WaveOrigin[] = []
         
         const renderer = new THREE.WebGLRenderer({ antialias: true })
         renderer.setSize(width, height)        
@@ -182,8 +182,7 @@ const Background = () => {
                 const r = Math.sqrt(baseX*baseX + baseZ*baseZ)
                 let totalOffset = 0.0
 
-                // for (let n = 0; n < 20; n++) {
-                for (let origin of waveOrigins) {
+                for (let origin of waveOriginsRef.current) {
                     const ringAge = timeSeconds - origin.startTime
                     if (ringAge < 0) continue
 
@@ -202,6 +201,12 @@ const Background = () => {
                     }
                 }
 
+                waveOriginsRef.current = waveOriginsRef.current.filter(origin => {
+                    const ringAge = timeSeconds - origin.startTime;
+                    const waveFront = waveSpeed * ringAge;
+                    return (waveFront - halfWidth) <= maxDistance;
+                });
+  
                 positions[idx + 0] = baseX
                 positions[idx + 1] = baseY + totalOffset
                 positions[idx + 2] = baseZ
@@ -232,12 +237,13 @@ const Background = () => {
                 const point = intersects[0].point
                 spawnRippleAt(point.x, point.z)
             }
+            console.log(waveOriginsRef.current)
         }
         window.addEventListener("pointerdown", onPointerDown)
 
         function spawnRippleAt(x: number, z: number) {
             console.log(x, z)
-            waveOrigins.push({
+            waveOriginsRef.current.push({
                 startTime: performance.now() * 0.001,
                 centerX: x,
                 centerZ: z
@@ -254,6 +260,18 @@ const Background = () => {
             planeGeometry.dispose();
             renderer.dispose();
         }
+    }, [])
+
+    useEffect(() => {
+        const spawnCenterWave = setInterval(() => {
+            waveOriginsRef.current.push({
+                startTime: performance.now() * 0.001,
+                centerX: 0,
+                centerZ: 0
+            })
+        }, ringInterval * 1000)
+
+        return () => clearInterval(spawnCenterWave)
     }, [])
 
     useEffect(() => {
