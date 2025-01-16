@@ -237,12 +237,10 @@ const Background = () => {
                 const point = intersects[0].point
                 spawnRippleAt(point.x, point.z)
             }
-            console.log(waveOriginsRef.current)
         }
         window.addEventListener("pointerdown", onPointerDown)
 
         function spawnRippleAt(x: number, z: number) {
-            console.log(x, z)
             waveOriginsRef.current.push({
                 startTime: performance.now() * 0.001,
                 centerX: x,
