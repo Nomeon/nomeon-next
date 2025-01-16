@@ -22,12 +22,13 @@ export default function RootLayout({
             attribute="class"
             defaultTheme="system"
             enableSystem
+            enableColorScheme
             disableTransitionOnChange
         >
           <Header />
           <Background />
           <Frame />
-          <main className="fixed z-30 container-frame overflow-y-scroll no-scrollbar">
+          <main className="fixed z-30 left-5 top-24 h-[calc(100dvh-8rem)] w-[calc(100dvw-2.5rem)] md:h-[calc(100dvh-5rem)] md:w-[calc(100dvw-5rem)] md:left-10 md:top-10 overflow-y-scroll no-scrollbar">
             {children}
           </main>
         </ThemeProvider>

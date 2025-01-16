@@ -83,9 +83,9 @@ const Background = () => {
     const space = 10
 
     // Star parameters:
-    const darkColor = 0x00ccff
-    const lightColor = 0xff0000
-    const starSize = 2.0
+    const darkColor = 0x00dcff
+    const lightColor = 0x651fff
+    const starSize = 1.5
     const starAlpha = 1.0
 
     // Wave animation parameters:
