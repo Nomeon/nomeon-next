@@ -3,6 +3,7 @@ import { Header } from "@/components/custom/header";
 import { Background } from "@/components/custom/background";
 import { Frame } from "@/components/custom/frame";
 import { ThemeProvider } from "@/components/custom/theme-provider"
+import Providers from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,13 +25,15 @@ export default function RootLayout({
             enableSystem
             enableColorScheme
             disableTransitionOnChange
-        >
-          <Header />
-          <Background />
-          <Frame />
-          <main className="fixed z-30 left-5 top-24 h-[calc(100dvh-8rem)] w-[calc(100dvw-2.5rem)] md:h-[calc(100dvh-5rem)] md:w-[calc(100dvw-5rem)] md:left-10 md:top-10 overflow-y-scroll no-scrollbar">
-            {children}
-          </main>
+            >
+          <Providers>
+            <Header />
+            <Background />
+            <Frame />
+            <main className="fixed left-1/2 -translate-x-1/2 z-30 top-24 md:top-10 h-[calc(100dvh-8rem)] w-[calc(100dvw-2.5rem)] md:h-[calc(100dvh-5rem)] md:w-[calc(100dvw-5rem)] container overflow-y-scroll no-scrollbar">
+                {children}
+            </main>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

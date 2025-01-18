@@ -83,7 +83,7 @@ export function ContactForm() {
   }
 
   return (
-    <div>
+    <>
       {submitted ? 
         <div>
 
@@ -120,7 +120,7 @@ export function ContactForm() {
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem className=''>
                 <FormControl>
-                  <Input placeholder="Phonenumber*" {...field} />
+                  <Input placeholder="Phone number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -128,7 +128,13 @@ export function ContactForm() {
             <FormField control={form.control} name="message" render={({ field }) => (
               <FormItem className='-mt-4 pt-8'>
                 <FormControl>
-                  <Textarea className='min-h-40' placeholder='Message...' {...field} />
+                  <div className='relative'>
+                    <Textarea className='min-h-40' placeholder='Message*...' {...field} />
+                    <div className='absolute top-0 left-0 w-1/4 h-[0.5px] bg-cyan-500' />
+                    <div className='absolute top-0 left-0 h-1/4 w-[0.5px] bg-cyan-500' />
+                    <div className='absolute bottom-0 right-0 w-1/4 h-[0.5px] bg-cyan-500' />
+                    <div className='absolute bottom-0 right-0 h-1/4 w-[0.5px] bg-cyan-500' />
+                  </div>
                 </FormControl>
                 <FormMessage className='absolute' />
               </FormItem>
@@ -146,7 +152,7 @@ export function ContactForm() {
           </form>
         </Form>
       }
-    </div>
+    </>
   )
 }
 

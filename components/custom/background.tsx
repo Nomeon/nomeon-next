@@ -7,6 +7,7 @@ import * as motion from 'motion/react-client'
 import { usePathname } from "next/navigation"
 import { gsap } from "gsap"
 import { CustomEase } from "gsap/all"
+import { useTransitionState } from "next-transition-router"
 
 interface WaveOrigin {
     startTime: number
@@ -69,6 +70,7 @@ const fragmentShader = `
 const Background = () => {
     const { theme } = useTheme()
     const pathname = usePathname();
+    const { stage } = useTransitionState()
 
     const containerRef = useRef<HTMLDivElement>(null)
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -308,10 +310,13 @@ const Background = () => {
             camera.lookAt(0, 100, 0)
           }
         })
-      }, [pathname])
+    }, [pathname])
 
     return (
-        <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 3, delay: 1, ease: "easeInOut" }} ref={containerRef} className="fixed z-10 container-frame" />
+        <>
+            <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 3, delay: 1, ease: "easeInOut" }} ref={containerRef} className="fixed z-10 container-frame" />
+            <div>{stage}</div>
+        </>
     )
 }
 

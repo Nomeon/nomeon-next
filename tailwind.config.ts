@@ -8,6 +8,12 @@ export default {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+	container: {
+		center: true,
+		screens: {
+			"3xl": "1920px"
+		},
+	},
 	fontFamily: {
 		'raleway': ['Raleway', 'sans-serif'],
 		'barlow': ['Barlow', 'sans-serif'],

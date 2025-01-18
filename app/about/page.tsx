@@ -96,7 +96,7 @@ export default function About() {
                         <CarouselContent className="h-32 lg:h-96">
                             {skillList.map((skill, index) => (
                                 <CarouselItem key={index} className="basis-1/4 md:basis-1/5 flex items-center justify-center">
-                                    <Icon icon={theme === 'dark' ? skill.dark : skill.light} width="32" height="32" />
+                                    <Icon icon={theme === 'dark' ? skill.dark : skill.light} width="32" height="32"/>
                                 </CarouselItem>
                             ))}
                         </CarouselContent>
