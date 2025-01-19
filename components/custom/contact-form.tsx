@@ -19,35 +19,29 @@ import { useState, useRef } from 'react'
 export const formSchema = z.object({
   name: z.string({
     required_error: 'Please enter your name',
-  }).min(2, {
-    message: 'Name is too short'
-  }).max(50, {
-    message: 'Name is too long'
-  }),
+  })
+  .min(2, 'Name is too short')
+  .max(50,  'Name is too long'),
   subject: z.string({
     required_error: 'Please enter a subject',
-  }).min(2, {
-    message: 'Subject is too short'
-  }).max(50, {
-    message: 'Subject is too long'
-  }),
+  })
+  .min(2, 'Subject is too short')
+  .max(50, 'Subject is too long'),
   email: z.string({
     required_error: 'Please enter your email',
   }).email({
     message: 'Invalid email address'
   }),
-  phone: z.string().min(9, {
-    message: 'Phone number is too short'
-  }).max(15, {
-    message: 'Phone number is too long'
-  }),
+  phone: z.string()
+  .min(9, 'Phone number is too short')
+  .max(15, 'Phone number is too long')
+  .optional()
+  .or(z.literal('')),
   message: z.string({
     required_error: 'Please enter a message',
-  }).min(10, {
-    message: 'Message is too short'
-  }).max(500, {
-    message: 'Message is too long'
   })
+  .min(10, 'Message is too short')
+  .max(500, 'Message is too long')
 })
 
 export function ContactForm() {

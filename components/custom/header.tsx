@@ -18,7 +18,7 @@ const Header = () => {
                     />
                 </motion.svg>
                 <div className="z-50 fixed right-2 md:top-6 top-16 dark:bg-black bg-white text-left dark:text-white text-black rounded-xl md:flex items-center gap-4 md:pr-5">
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1, delay: 1 }}  >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1 }}  >
                         <nav className="flex flex-row font-barlow items-center justify-center px-2">
                             <Link href="/">
                                 <p className="text-xl">HOME</p>
@@ -37,7 +37,7 @@ const Header = () => {
                             </Link>
                         </nav>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1, delay: 1 }}>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1 }}>
                         <ModeToggle />
                     </motion.div>
                 </div>

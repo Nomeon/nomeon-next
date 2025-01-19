@@ -1,33 +1,33 @@
-'use client';
+'use client'
 
+import { TransitionContext } from '@/components/custom/path-provider';
 import { TransitionRouter } from 'next-transition-router';
-import { useAnimate } from "motion/react"
+import { useState } from 'react';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [scope, animate] = useAnimate();
-
-  // Use stage to trigger exit animation if it does not happen manually
+  const [transitionPaths, setTransitionPaths] = useState({ from: '', to: '' })
 
   return (
     <TransitionRouter
       auto
       leave={(next, from, to) => {
-        animate(
-          scope.current,
-          { opacity: [1, 0.999] },
-          { duration: 1, onComplete: next }
-        );
+        if (from === to) return next()
+        if (from && to) {
+          setTransitionPaths({ from, to })
+        }
+        setTimeout(function() {
+          next()
+        }, 1000)
       }}
       enter={(next) => {
-        // next()
-        animate(
-          scope.current,
-          { opacity: [0.999, 1] },
-          { duration: 1, onComplete: next }
-        );
+        setTimeout(function() {
+          next()
+        }, 1000)
       }}
     >
-      <div className='h-full w-full' ref={scope}>{children}</div>
+      <TransitionContext.Provider value={transitionPaths}>
+        <div className='h-full w-full'>{children}</div>
+      </TransitionContext.Provider>
     </TransitionRouter>
   );
 }

@@ -4,10 +4,9 @@ import { useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
 import * as THREE from "three"
 import * as motion from 'motion/react-client'
-import { usePathname } from "next/navigation"
 import { gsap } from "gsap"
 import { CustomEase } from "gsap/all"
-import { useTransitionState } from "next-transition-router"
+import { useTransitionContext } from "@/components/custom/path-provider"
 
 interface WaveOrigin {
     startTime: number
@@ -69,8 +68,7 @@ const fragmentShader = `
 
 const Background = () => {
     const { theme } = useTheme()
-    const pathname = usePathname();
-    const { stage } = useTransitionState()
+    const { to } = useTransitionContext();
 
     const containerRef = useRef<HTMLDivElement>(null)
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -293,7 +291,7 @@ const Background = () => {
         const startAngle = Math.atan2(camera.position.z, camera.position.x)
         const radius = Math.sqrt(camera.position.x**2 + camera.position.z**2)
         
-        const routeAngle = angleForRoute(pathname)
+        const routeAngle = angleForRoute(to)
         const finalAngle = shortestAngle(startAngle, routeAngle)
       
         let angleObj = { value: startAngle }
@@ -310,13 +308,9 @@ const Background = () => {
             camera.lookAt(0, 100, 0)
           }
         })
-    }, [pathname])
-
+    }, [to])
     return (
-        <>
-            <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 3, delay: 1, ease: "easeInOut" }} ref={containerRef} className="fixed z-10 container-frame" />
-            <div>{stage}</div>
-        </>
+        <motion.div id='background' initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 1, ease: "easeIn" }} ref={containerRef} className="fixed z-10 container-frame" />
     )
 }
 
